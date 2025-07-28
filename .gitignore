@@ -1,8 +1,32 @@
 # .gitignore
-data/data/
-venv*/
+
+# Ignore virtual environment
+venv310/
+.venv/
+env/
 *.pyc
 __pycache__/
-*.pkl
+
+# Ignore large datasets (CSV, pickle, PDF)
 *.csv
+*.pkl
 *.pdf
+
+# Ignore resume datasets
+data/data/
+
+# Ignore system and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore model binaries and heavy libs (if any)
+*.dll
+*.lib
+*.pt
+*.h5
+*.onnx
+

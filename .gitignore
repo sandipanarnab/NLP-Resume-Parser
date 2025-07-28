@@ -1,0 +1,8 @@
+# .gitignore
+data/data/
+venv*/
+*.pyc
+__pycache__/
+*.pkl
+*.csv
+*.pdf

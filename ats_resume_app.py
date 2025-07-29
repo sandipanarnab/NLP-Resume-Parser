@@ -13,13 +13,13 @@ from io import BytesIO
 REASONING_MODEL = "deepseek/deepseek-chat-v3-0324:free"
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key="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"
 )
 
 # --- Load Preprocessed Data ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv(r"C:\Users\sandi\Desktop\My Working Git\NLP Resume Parser\data\Resume\top_candidates.csv")
+    df = pd.read_csv(r"data/Resume/top_candidates.csv")
     return df
 
 # --- Extract score from reasoning ---

@@ -1,88 +1,108 @@
-# 🧠 ATS Resume Shortlisting App
+# 🧠 AI-Powered ATS Resume Shortlisting App
 
-A smart Applicant Tracking System (ATS) powered by **semantic search** and **LLM-based reasoning** to screen and rank resumes against a job description (JD).
+A smart, AI-first Applicant Tracking System (ATS) that automates resume screening using **semantic similarity** and **LLM-based contextual reasoning**—no manual keyword filters!
 
-🚀 Live Deployment (optional): [Streamlit App Link](#)
-
-## 📌 Project Overview
-
-This tool allows HR teams or hiring managers to:
-- Upload a job description and a batch of resumes (PDF, DOC, DOCX).
-- Use **Sentence Transformers** to semantically match resumes with JD.
-- Leverage an **LLM (DeepSeek via OpenRouter)** to evaluate candidates contextually.
-- Generate **reasoning**, assign a **score**, and visualize the **top 5 candidates** with HTML previews of their resumes.
-
-> ⚠️ No manual keyword scanning. It's all AI-based!
+🔗 **Live Demo**: [Click here to try it on Streamlit →](https://nlp-resume-parser-7a57dyd9wv9jswobchdppc.streamlit.app/)
 
 ---
 
-## ✨ Features
+## 📌 What It Does
 
-- ✅ **Resume Upload & Preview**
-- ✅ **TF-IDF + Semantic Matching**
-- ✅ **LLM-based Reasoning (DeepSeek / GPT-style)**
-- ✅ **Custom Score Extraction and Ranking**
-- ✅ **Experience Classification**
-- ✅ **Streamlit UI Dashboard**
+This AI-driven tool helps recruiters:
+
+- ⚡ Upload a **job description** and a batch of resumes (PDF/DOCX)
+- 🧠 Apply **Sentence Transformers** for semantic match scoring
+- 🤖 Use **LLM (via OpenRouter)** to evaluate resumes with rich reasoning and a human-like score
+- 📊 Visualize the **Top 5 Candidates** with AI-generated analysis and preview
+
+> No keyword matching. Pure AI. Human-level analysis at scale.
+
+---
+
+## 🔍 Features
+
+✅ Resume Upload & PDF/DOCX Parsing  
+✅ Semantic Matching via Sentence Transformers  
+✅ LLM-based Resume Evaluation (Mistral via OpenRouter)  
+✅ Extracted Scoring + AI Reasoning  
+✅ Streamlit Interactive UI  
+✅ Upload Your Own Resume for Instant Evaluation
 
 ---
 
 ## 🧰 Tech Stack
 
-| Category       | Tools Used                                     |
-|----------------|------------------------------------------------|
-| Language       | Python 3.x                                     |
-| Embedding      | `sentence-transformers (MiniLM-L6-v2)`         |
-| LLM            | DeepSeek via `OpenRouter` API                  |
-| Frontend       | Streamlit                                      |
-| Matching       | TF-IDF, Cosine Similarity                      |
-| File Handling  | PyMuPDF, python-docx, docx2txt                 |
-| Visualization  | Streamlit components, matplotlib (optional)    |
+| Category       | Tools Used                                 |
+|----------------|--------------------------------------------|
+| Language       | Python 3.x                                 |
+| Embeddings     | `sentence-transformers` (MiniLM-L6-v2)     |
+| LLM            | Mistral-7B via OpenRouter API              |
+| Frontend       | Streamlit                                  |
+| File Parsing   | PyMuPDF, `docx2txt`, `python-docx`         |
+| Reasoning      | OpenAI SDK with OpenRouter endpoint        |
+| Deployment     | Streamlit Cloud                            |
 
 ---
 
-## 📂 Folder Structure
+## 🚀 Run It Locally
 
 ```bash
-NLP-Resume-Parser/
-│
-├── ats_resume_app.py          # Main Streamlit App
-├── Notebook/                  # Development Notebooks
-├── data/
-│   └── Resume/
-│       └── Resume.csv         # Processed Resume Dataset (Filtered)
-├── requirements.txt           # Python dependencies
-├── README.md                  # You're reading it!
-🚀 How to Run Locally
-
-# 1. Create and activate virtual env
+# 1. Create a virtual environment
 python -m venv venv
-source venv/bin/activate  # For Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Run the app
+# 3. Add your OpenRouter API key to secrets
+echo "OPENROUTER_API_KEY=your_key" > .env
+
+# 4. Run the app
 streamlit run ats_resume_app.py
-📝 Future Improvements
-🔄 Add GitHub Actions for auto-deployment
+```
 
-🧠 Replace DeepSeek with self-hosted LLM for private usage
+---
 
-📊 Add resume analysis charts (education level, skill coverage, etc.)
+## 📂 Project Structure
 
-🔒 Add file encryption for resume uploads
+```bash
+NLP-Resume-Parser/
+├── ats_resume_app.py         # Main Streamlit App
+├── data/Resume/top_candidates.csv
+├── Notebook/ATS Resume parser.ipynb
+├── requirements.txt
+├── README.md
+└── .env                      # (Optional) for local API key use
+```
 
-🙋‍♂️ Author
-Sandipan Dutta
-Deep Learning + NLP Enthusiast
-GitHub: @sandipanarnab
-LinkedIn: https://www.linkedin.com/in/sandipanarnab/
+---
 
-⚠️ Notes
-Resume.csv is included only for demo. For production, use your own data.
+## 📈 Future Roadmap
 
-Ensure OpenRouter API key is active and secure in environment variables.
+- 🔐 Self-hosted LLM option (e.g., llama.cpp or Ollama)
+- 📉 Detailed analytics on skill coverage, experience, gaps
+- 🔄 GitHub Actions CI/CD deployment
+- 🗂️ Drag-drop bulk resume parsing
+- 🔒 Secure upload with encryption for enterprise use
 
-⭐ Show Some Love
-If you like this project, consider ⭐ starring the repo or sharing it with others!
+---
+
+## 👨‍💻 About the Developer
+
+**Sandipan Dutta**  
+Machine Learning & NLP Enthusiast | Python Developer  
+🔗 [LinkedIn](https://www.linkedin.com/in/sandipanarnab/) • 🐙 [GitHub @sandipanarnab](https://github.com/sandipanarnab)
+
+---
+
+## ⭐ Like This Project?
+
+If this project helped you or impressed you, consider giving it a **⭐ star** and sharing with others in the NLP/ATS community!
+
+---
+
+## ⚠️ Notes
+
+- All resumes used are anonymized or demo data.
+- API key is securely managed using `.env` or Streamlit secrets.
+- Built for educational & prototyping purposes.

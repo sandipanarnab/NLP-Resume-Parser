@@ -8,12 +8,17 @@ import docx2txt
 import fitz  # PyMuPDF
 import re
 from io import BytesIO
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+api_key = os.getenv("OPENROUTER_API_KEY")
 
 # --- Constants ---
 REASONING_MODEL = "mistralai/mistral-small-3.2-24b-instruct:free"
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key=api_key
 )
 
 # --- Load Preprocessed Data ---

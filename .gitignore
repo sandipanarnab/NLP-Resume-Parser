@@ -11,6 +11,7 @@ __pycache__/
 *.csv
 *.pkl
 *.pdf
+*.env
 
 # BUT keep this specific one (override the rule above)
 !data/Resume/top_candidates.csv

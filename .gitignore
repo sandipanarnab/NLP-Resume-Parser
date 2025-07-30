@@ -12,6 +12,11 @@ __pycache__/
 *.pkl
 *.pdf
 
+# BUT keep this specific one (override the rule above)
+!data/Resume/top_candidates.csv
+!data/Resume/Resume.csv
+
+
 # Ignore resume datasets
 data/data/
 

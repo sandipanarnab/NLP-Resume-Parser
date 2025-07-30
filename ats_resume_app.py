@@ -10,34 +10,60 @@ import re
 from io import BytesIO
 
 # --- Constants ---
-REASONING_MODEL = "deepseek/deepseek-chat-v3-0324:free"
+REASONING_MODEL = "mistralai/mistral-small-3.2-24b-instruct:free"
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key="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"
 )
 
 # --- Load Preprocessed Data ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv(r"data/Resume/top_candidates.csv")
-    return df
+    return pd.read_csv("data/Resume/top_candidates.csv")
 
 # --- Extract score from reasoning ---
 def extract_score(text):
-    match = re.search(r'(\d+(\.\d+)?)/100', text)
-    return float(match.group(1)) if match else None
+    total_score_match = re.search(r'Total Score\s*[:\-]?\s*(\d+(\.\d+)?)\s*/\s*100', text, re.IGNORECASE)
+    if total_score_match:
+        return float(total_score_match.group(1))
+    fallback_matches = re.findall(r'(\d+(\.\d+)?)\s*/\s*100', text)
+    if fallback_matches:
+        return float(fallback_matches[-1][0])
+    return None
+
+# --- Classify recommendation ---
+def get_recommendation_label(score):
+    if score is None:
+        return "❓ Unknown"
+    elif score >= 85:
+        return "✅ Highly Recommended"
+    elif score >= 70:
+        return "👍 Recommended"
+    elif score >= 50:
+        return "⚠️ Borderline – Interview with Caution"
+    else:
+        return "❌ Not Recommended"
+
+# --- Extract positives and negatives ---
+def extract_pros_cons(reasoning):
+    pros_match = re.search(r"\*\*Strengths:\*\*\s*-([\s\S]*?)(?=\*\*Concerns:|\Z)", reasoning, re.IGNORECASE)
+    cons_match = re.search(r"\*\*Concerns:\*\*\s*-([\s\S]*?)(?=(\n\n|\*\*|$))", reasoning, re.IGNORECASE)
+
+    pros = pros_match.group(1).strip() if pros_match else "Not clearly specified"
+    cons = cons_match.group(1).strip() if cons_match else "No major issues listed"
+
+    return pros, cons
 
 # --- Extract text from PDF/DOCX ---
 def extract_text(uploaded_file):
     if uploaded_file.name.endswith(".pdf"):
         with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
-            text = "\n".join([page.get_text() for page in doc])
+            return "\n".join([page.get_text() for page in doc]).strip()
     elif uploaded_file.name.endswith((".doc", ".docx")):
-        text = docx2txt.process(BytesIO(uploaded_file.read()))
+        return docx2txt.process(BytesIO(uploaded_file.read())).strip()
     else:
         st.error("Unsupported file format. Upload PDF, DOC, or DOCX.")
         return ""
-    return text.strip()
 
 # --- LLM Reasoning Function ---
 def get_llm_reasoning(jd, resume_text):
@@ -51,7 +77,11 @@ Skills include classroom delivery, curriculum design, tech-enabled instruction, 
 
 {resume_text}
 
-Explain your score briefly.
+Explain the score clearly, including:
+- Strengths (positives)
+- Weaknesses (areas for improvement)
+- Final score (out of 100)
+- Recommendation (Strongly Recommended, Recommended, Consider with Caution, Not Recommended)
 """
     try:
         response = client.chat.completions.create(
@@ -93,23 +123,11 @@ st.bar_chart(bar_df)
 
 # --- View Reasoning and Resume Preview ---
 st.subheader("🧠 LLM Reasoning & Resume Preview")
-
-selected_id = st.selectbox("Select Candidate ID:", top_5["ID"])
+selected_id = st.selectbox("Select Candidate ID", final_df["ID"])
 selected_row = final_df[final_df["ID"] == selected_id].iloc[0]
 
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("#### 🤖 LLM Reasoning")
-    st.info(selected_row.get("LLM_reasoning", "No reasoning found."))
-
-with col2:
-    st.markdown("#### 📄 Resume Preview")
-    resume_html = selected_row.get("Resume_HTML", "")
-    if pd.notna(resume_html) and resume_html.strip():
-        st.components.v1.html(resume_html, height=500, scrolling=True)
-    else:
-        st.warning("No HTML preview found for this candidate.")
+st.markdown(f"### 🤖 LLM Reasoning\n\n{selected_row['LLM_reasoning']}")
+st.markdown(f"### ✅ LLM Score: `{selected_row['llm_score']}/100` | {get_recommendation_label(selected_row['llm_score'])}")
 
 # --- Upload Resume ---
 st.subheader("📤 Upload Your Resume (PDF, DOC, DOCX)")
@@ -125,10 +143,12 @@ if uploaded_file:
 
             llm_reasoning = get_llm_reasoning(science_teacher_jd, resume_text)
             llm_score = extract_score(llm_reasoning)
+            recommendation = get_recommendation_label(llm_score)
+            pros, cons = extract_pros_cons(llm_reasoning)
 
             st.markdown(f"### 🔍 Semantic Similarity Score: `{sem_score:.2f}`")
             if llm_score is not None:
-                st.markdown(f"### ✅ LLM Score: `{llm_score}/100`")
+                st.markdown(f"### ✅ LLM Score: `{llm_score}/100` | {recommendation}")
             else:
                 st.warning("LLM score not extracted properly.")
 

@@ -11,7 +11,9 @@ from io import BytesIO
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# --- Load .env from project root ---
+dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+load_dotenv(dotenv_path=dotenv_path)
 api_key = os.getenv("OPENROUTER_API_KEY")
 
 # --- Constants ---

@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 # --- Load .env from project root ---
 load_dotenv(override=True)  # Added override=True
 
+api_key = st.secrets.get("OPENROUTER_API_KEY", None)
+
 # --- Initialize OpenAI client (Updated approach) ---
 api_key = os.getenv("OPENROUTER_API_KEY")
 if not api_key:

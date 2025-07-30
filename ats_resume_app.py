@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from openai import OpenAI
+from openai import OpenAI  # Updated import
 import docx2txt
 import fitz  # PyMuPDF
 import re
@@ -12,16 +12,21 @@ import os
 from dotenv import load_dotenv
 
 # --- Load .env from project root ---
-dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
-load_dotenv(dotenv_path=dotenv_path)
+load_dotenv(override=True)  # Added override=True
+
+# --- Initialize OpenAI client (Updated approach) ---
 api_key = os.getenv("OPENROUTER_API_KEY")
+if not api_key:
+    st.error("❌ OPENROUTER_API_KEY not found in environment variables")
+    st.stop()
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=api_key,
+)
 
 # --- Constants ---
 REASONING_MODEL = "mistralai/mistral-small-3.2-24b-instruct:free"
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=api_key
-)
 
 # --- Load Preprocessed Data ---
 @st.cache_data
@@ -51,16 +56,6 @@ def get_recommendation_label(score):
     else:
         return "❌ Not Recommended"
 
-# --- Extract positives and negatives ---
-def extract_pros_cons(reasoning):
-    pros_match = re.search(r"\*\*Strengths:\*\*\s*-([\s\S]*?)(?=\*\*Concerns:|\Z)", reasoning, re.IGNORECASE)
-    cons_match = re.search(r"\*\*Concerns:\*\*\s*-([\s\S]*?)(?=(\n\n|\*\*|$))", reasoning, re.IGNORECASE)
-
-    pros = pros_match.group(1).strip() if pros_match else "Not clearly specified"
-    cons = cons_match.group(1).strip() if cons_match else "No major issues listed"
-
-    return pros, cons
-
 # --- Extract text from PDF/DOCX ---
 def extract_text(uploaded_file):
     if uploaded_file.name.endswith(".pdf"):
@@ -72,7 +67,7 @@ def extract_text(uploaded_file):
         st.error("Unsupported file format. Upload PDF, DOC, or DOCX.")
         return ""
 
-# --- LLM Reasoning Function ---
+# --- LLM Reasoning Function (Updated to use client) ---
 def get_llm_reasoning(jd, resume_text):
     prompt = f"""
 You are a recruiter shortlisting candidates. Here's the job description:
@@ -91,16 +86,21 @@ Explain the score clearly, including:
 - Recommendation (Strongly Recommended, Recommended, Consider with Caution, Not Recommended)
 """
     try:
-        response = client.chat.completions.create(
+        response = client.chat.completions.create(  # Updated to use client
             model=REASONING_MODEL,
             messages=[
                 {"role": "system", "content": "You are an expert hiring assistant helping shortlist resumes."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7
+            temperature=0.7,
+            extra_headers={
+                "HTTP-Referer": "https://yourdomain.com",  # Optional
+                "X-Title": "ATS Resume App",                # Optional
+            }
         )
         return response.choices[0].message.content
     except Exception as e:
+        st.error(f"API Error: {e}")
         return f"Error: {e}"
 
 # --- Job Description ---
@@ -109,32 +109,52 @@ Looking for a science teacher with experience in student-centric, hands-on class
 """
 
 # --- Load Embedder ---
-embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+@st.cache_resource
+def load_embedder():
+    return SentenceTransformer("all-MiniLM-L6-v2")
+
+embed_model = load_embedder()
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="ATS Resume Shortlisting App", layout="wide")
 st.title("📄 ATS Resume Matching & LLM Reasoning")
 
+# Add API key status indicator
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.markdown("### Resume Analysis Dashboard")
+with col2:
+    if api_key:
+        st.success(f"🔑 API Key: {api_key[:10]}...")
+    else:
+        st.error("🔑 No API Key")
+
 # --- Load & Display Top Candidates ---
-final_df = load_data().copy()
-top_5 = final_df.sort_values(by="match_score", ascending=False).head(5)
+try:
+    final_df = load_data().copy()
+    top_5 = final_df.sort_values(by="match_score", ascending=False).head(5)
 
-st.subheader("Top 5 Resume Candidates")
-st.dataframe(top_5[["ID", "match_score", "llm_score"]], use_container_width=True)
+    st.subheader("Top 5 Resume Candidates")
+    st.dataframe(top_5[["ID", "match_score", "llm_score"]], use_container_width=True)
 
-# --- Semantic Match Bar Chart ---
-st.subheader("📊 Semantic Matching Scores")
-top_5["Label"] = top_5["ID"].astype(str)
-bar_df = top_5.set_index("Label")[["match_score"]]
-st.bar_chart(bar_df)
+    # --- Semantic Match Bar Chart ---
+    st.subheader("📊 Semantic Matching Scores")
+    top_5["Label"] = top_5["ID"].astype(str)
+    bar_df = top_5.set_index("Label")[["match_score"]]
+    st.bar_chart(bar_df)
 
-# --- View Reasoning and Resume Preview ---
-st.subheader("🧠 LLM Reasoning & Resume Preview")
-selected_id = st.selectbox("Select Candidate ID", final_df["ID"])
-selected_row = final_df[final_df["ID"] == selected_id].iloc[0]
+    # --- View Reasoning and Resume Preview ---
+    st.subheader("🧠 LLM Reasoning & Resume Preview")
+    selected_id = st.selectbox("Select Candidate ID", final_df["ID"])
+    selected_row = final_df[final_df["ID"] == selected_id].iloc[0]
 
-st.markdown(f"### 🤖 LLM Reasoning\n\n{selected_row['LLM_reasoning']}")
-st.markdown(f"### ✅ LLM Score: `{selected_row['llm_score']}/100` | {get_recommendation_label(selected_row['llm_score'])}")
+    st.markdown(f"### 🤖 LLM Reasoning\n\n{selected_row['LLM_reasoning']}")
+    st.markdown(f"### ✅ LLM Score: `{selected_row['llm_score']}/100` | {get_recommendation_label(selected_row['llm_score'])}")
+
+except FileNotFoundError:
+    st.warning("⚠️ Could not find 'data/Resume/top_candidates.csv'. Please ensure the file exists.")
+except Exception as e:
+    st.error(f"Error loading data: {e}")
 
 # --- Upload Resume ---
 st.subheader("📤 Upload Your Resume (PDF, DOC, DOCX)")
@@ -151,7 +171,6 @@ if uploaded_file:
             llm_reasoning = get_llm_reasoning(science_teacher_jd, resume_text)
             llm_score = extract_score(llm_reasoning)
             recommendation = get_recommendation_label(llm_score)
-            pros, cons = extract_pros_cons(llm_reasoning)
 
             st.markdown(f"### 🔍 Semantic Similarity Score: `{sem_score:.2f}`")
             if llm_score is not None:
